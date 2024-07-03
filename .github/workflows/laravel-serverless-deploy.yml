@@ -44,4 +44,4 @@ jobs:
         run: npx serverless deploy
       - name: Run migration
         run: npx serverless bref:cli --args="migrate --force"
-        if: ${{inputs.run_migration == 'true'}}
+        if: ${{inputs.run_migration == true}}
