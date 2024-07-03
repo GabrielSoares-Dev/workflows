@@ -6,14 +6,6 @@ on:
         description: 'The environment to deploy to'
         required: true
         type: string
-      aws_access_key_id:
-        description: 'AWS Access Key ID'
-        required: true
-        type: string
-      aws_secret_access_key:
-        description: 'AWS Secret Access Key'
-        required: true
-        type: string
       env_vars_path:
         description: 'Path  terraform env vars'
         required: true
@@ -22,9 +14,17 @@ on:
         description: Terraform work directory
         required: true
         type: string
+    secrets:
+      aws_access_key_id:
+        description: 'AWS Access Key ID'
+        required: true
+      aws_secret_access_key:
+        description: 'AWS Secret Access Key'
+        required: true
+    
 env:
-  AWS_ACCESS_KEY_ID: ${{ inputs.aws_access_key_id }}
-  AWS_SECRET_ACCESS_KEY: ${{ inputs.aws_secret_access_key }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.aws_access_key_id }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.aws_secret_access_key }}
 jobs:
   terraform:
     runs-on: ubuntu-latest
