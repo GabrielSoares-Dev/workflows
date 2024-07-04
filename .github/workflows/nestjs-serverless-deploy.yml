@@ -1,0 +1,46 @@
+name: DEPLOY - NESTJS - SERVERLESS
+on:
+  workflow_call:
+    inputs:
+      node_version:
+          description: 'node version'
+          required: true
+          type: string
+      run_migration:
+        type: string
+        default: 'false'
+        description: Run migration into database
+    secrets:
+      aws_access_key_id:
+        description: 'AWS Access Key ID'
+        required: true
+      aws_secret_access_key:
+        description: 'AWS Secret Access Key'
+        required: true
+      database_url:
+        description: 'Database url'
+        required: true
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.aws_access_key_id }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.aws_secret_access_key }}
+jobs:
+  serverless:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{secrets.database_url}}
+      - name: Install Node Dependencies
+        run: npm ci
+      - name: Run migration
+        run: npm run migrate:prod
+        env:
+          DATABASE_URL: ${{ secrets.database_url }}
+        if: ${{inputs.run_migration == 'true'}}
+      - name: Deploy
+        run: npm run serverless:deploy
+
+     
