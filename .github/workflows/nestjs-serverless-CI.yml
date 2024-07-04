@@ -15,7 +15,7 @@ on:
           required: true
           type: string
 jobs:
-  docker_portainer:
+  serverless:
     runs-on: ubuntu-latest
     services:
       mysql:
