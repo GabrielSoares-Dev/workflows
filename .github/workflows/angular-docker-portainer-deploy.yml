@@ -1,0 +1,49 @@
+name: DEPLOY - ANGULAR - DOCKER - PORTAINER
+on:
+  workflow_call:
+    inputs:
+      dockerfile_dir:
+        description: 'Dockerfile dir'
+        required: true
+        type: string
+      dockerfile_name:
+        description: 'Dockerfile name'
+        required: true
+        type: string
+      image:
+        description: 'docker image'
+        required: true
+        type: string
+    secrets:
+      docker_hub_username:
+        description: 'Docker hub username'
+        required: true
+      docker_hub_access_token:
+        description: 'Docker hub access token'
+        required: true
+      web_hook_portainer_url:
+        description: 'Web hook portainer url'
+        required: true
+jobs:
+  docker_portainer:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do repositorio
+        uses: actions/checkout@v4
+      - name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{secrets.docker_hub_username}}
+          password: ${{secrets.docker_hub_access_token}}
+      - uses: docker/build-push-action@v4
+        with:
+          push: true
+          context: ${{inputs.dockerfile_dir}}
+          file: ${{inputs.dockerfile_name}}
+          tags: ${{inputs.image}}
+      - name: Update image in stack
+        uses: distributhor/workflow-webhook@v2
+        env:
+          webhook_url: ${{secrets.web_hook_portainer_url}}
+          webhook_secret: 'Y0uR5ecr3t'
+          verify_ssl: false
