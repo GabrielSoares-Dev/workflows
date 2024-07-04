@@ -1,0 +1,34 @@
+name: DESTROY - NESTJS - SERVERLESS
+on:
+  workflow_call:
+    inputs:
+      node_version:
+          description: 'node version'
+          required: true
+          type: string
+    secrets:
+      aws_access_key_id:
+        description: 'AWS Access Key ID'
+        required: true
+      aws_secret_access_key:
+        description: 'AWS Secret Access Key'
+        required: true
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.aws_access_key_id }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.aws_secret_access_key }}
+jobs:
+  serverless:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{inputs.node_version}}
+      - name: Install Node Dependencies
+        run: npm ci
+      - name: Destroy
+        run: npx serverless remove
+
+     
