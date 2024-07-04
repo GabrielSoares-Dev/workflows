@@ -32,7 +32,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: ${{secrets.database_url}}
+          node-version: ${{inputs.node_version}}
       - name: Install Node Dependencies
         run: npm ci
       - name: Run migration
