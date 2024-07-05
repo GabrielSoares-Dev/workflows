@@ -1,0 +1,118 @@
+name: DEPLOY - ANGULAR - S3 - CLOUDFRONT
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'The environment to deploy to'
+        required: true
+        type: string
+      env_vars_path:
+        description: 'Path  terraform env vars'
+        required: true
+        type: string
+      work_dir:
+        description: Terraform work directory
+        required: true
+        type: string
+      node_version:
+        description: 'Node version'
+        required: true
+        type: string
+      build_file_path:
+        description: 'Build file path'
+        required: true
+        type: string
+    secrets:
+      aws_access_key_id:
+        description: 'AWS Access Key ID'
+        required: true
+      aws_secret_access_key:
+        description: 'AWS Secret Access Key'
+        required: true
+      aws_region:
+        description: 'AWS Secret Access Key'
+        required: true
+      bucket_name:
+        description: 'Bucket name to upload new project files'
+        required: true
+env:
+  AWS_ACCESS_KEY_ID: ${{secrets.aws_access_key_id}}
+  AWS_SECRET_ACCESS_KEY: ${{secrets.aws_secret_access_key}}
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ inputs.work_dir }}
+    outputs:
+      DISTRIBUTION_ID: ${{ steps.export_outputs.outputs.DISTRIBUTION_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.2.0"
+      - name: Init
+        run: terraform init
+      - name: Validate
+        run: terraform validate
+      - name: Select or Create Workspace
+        run: |
+          set -e
+
+          WORKSPACE_NAME="${{ inputs.environment }}"
+
+          # List existing workspaces
+          WORKSPACES=$(terraform workspace list)
+
+          # Check if the desired workspace exists
+          if echo "$WORKSPACES" | grep -q "\b${WORKSPACE_NAME}\b"; then
+            echo "Workspace ${WORKSPACE_NAME} exists. Selecting..."
+            terraform workspace select "${WORKSPACE_NAME}"
+          else
+            echo "Workspace ${WORKSPACE_NAME} does not exist. Creating..."
+            terraform workspace new "${WORKSPACE_NAME}"
+          fi
+      - name: Plan
+        run: terraform plan -out plan.out -var-file="${{ inputs.env_vars_path }}"
+      - name: Apply
+        run: terraform apply plan.out
+      - name: Export outputs
+        id: export_outputs
+        run: |
+          echo "DISTRIBUTION_ID=$(terraform output -raw distribution_id)" >> $GITHUB_OUTPUT
+  deploy:
+    needs: terraform
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build --prod
+      - name: Upload to s3
+        uses: keithweaver/aws-s3-github-action@v1.0.0
+        with:
+          command: cp
+          source: ${{inputs.build_file_path}}
+          destination: s3://${{ secrets.bucket_name }}/
+          aws_access_key_id: ${{ secrets.aws_access_key_id }}
+          aws_secret_access_key: ${{ secrets.aws_secret_access_key }}
+          aws_region: ${{secrets.aws_region}}
+          flags: --recursive
+      - name: Invalidate CloudFront cache
+        uses: chetan/invalidate-cloudfront-action@v2
+        env:
+          DISTRIBUTION: ${{ needs.terraform.outputs.DISTRIBUTION_ID}}
+          PATHS: "/*"
+          AWS_REGION: ${{secrets.aws_region}}
+          AWS_ACCESS_KEY_ID: ${{ secrets.aws_access_key_id }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.aws_secret_access_key }}
+  
