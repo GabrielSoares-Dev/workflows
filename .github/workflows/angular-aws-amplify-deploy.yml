@@ -1,0 +1,75 @@
+name: DEPLOY - ANGULAR - AWS - AMPLIFY
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'The environment to deploy to'
+        required: true
+        type: string
+      env_vars_path:
+        description: 'Path  terraform env vars'
+        required: true
+        type: string
+      work_dir:
+        description: Terraform work directory
+        required: true
+        type: string
+    secrets:
+      aws_access_key_id:
+        description: 'AWS Access Key ID'
+        required: true
+      aws_secret_access_key:
+        description: 'AWS Secret Access Key'
+        required: true
+      git_hub_secret:
+        description: 'Git hub access token'
+        required: true
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.aws_access_key_id }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.aws_secret_access_key }}
+  TF_VAR_access_token: ${{secrets.git_hub_secret}}
+jobs:
+  aws_amplify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory:  ${{ inputs.work_dir }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.2.0"
+      - name: Init
+        run: terraform init
+      - name: Validate
+        run: terraform validate
+      - name: Select or Create Workspace
+        run: |
+          set -e
+
+          WORKSPACE_NAME="${{ inputs.environment }}"
+
+          # List existing workspaces
+          WORKSPACES=$(terraform workspace list)
+
+          # Check if the desired workspace exists
+          if echo "$WORKSPACES" | grep -q "\b${WORKSPACE_NAME}\b"; then
+            echo "Workspace ${WORKSPACE_NAME} exists. Selecting..."
+            terraform workspace select "${WORKSPACE_NAME}"
+          else
+            echo "Workspace ${WORKSPACE_NAME} does not exist. Creating..."
+            terraform workspace new "${WORKSPACE_NAME}"
+          fi
+      - name: Plan
+        run: terraform plan -out plan.out -var-file="${{ inputs.env_vars_path }}"
+      - name: Apply
+        run: terraform apply plan.out
+      - name: Export outputs
+        id: export_outputs
+        run: |
+          echo "WEBHOOK=$(terraform output -raw webhook_trigger)" >> $GITHUB_OUTPUT
+      - name: Trigger update
+        run: curl -X POST -d {} "${{ steps.export_outputs.outputs.WEBHOOK }}" -H "Content-Type:application/json"
