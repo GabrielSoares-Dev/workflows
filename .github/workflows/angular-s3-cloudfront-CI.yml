@@ -1,4 +1,4 @@
-name: CI - ANGULAR - AWS - AMPLIFY
+name: CI - ANGULAR - S3 - CLOUDFRONT
 on:
     workflow_call:
       inputs:
@@ -25,15 +25,11 @@ on:
         aws_secret_access_key:
           description: 'AWS Secret Access Key'
           required: true
-        git_hub_secret:
-          description: 'Git hub access token'
-          required: true
 env:
   AWS_ACCESS_KEY_ID: ${{ secrets.aws_access_key_id }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.aws_secret_access_key }}
-  TF_VAR_access_token: ${{secrets.git_hub_secret}}
 jobs:
-  aws_amplify:
+  s3_cloudfront:
     runs-on: ubuntu-latest
     steps:
        - name: Checkout do repositorio
