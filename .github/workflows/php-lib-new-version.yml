@@ -33,6 +33,4 @@ jobs:
     #     token: ${{ secrets.git_token }}
     - name: Update Package on Packagist
       run: |
-        curl -X POST https://packagist.org/api/update-package?username=${{inputs.packagist_username}}&apiToken=${{ secrets.packagist_token }} \
-        -H 'Content-Type: application/json' \
-        -d '{"repository":"https://github.com/${{github.repository}}"}'
+        curl -X POST -H'Content-Type:application/json' 'https://packagist.org/api/update-package?username=${{inputs.packagist_username}}&apiToken=${{secrets.packagist_token}}' -d '{"repository":"https://github.com/${{github.repository}}"}'
