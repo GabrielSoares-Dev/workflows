@@ -25,15 +25,10 @@ jobs:
       run: |
         VERSION=$(jq -r '.version' composer.json)
         echo "::set-output name=version::$VERSION"
-    - name: Create tag
-      uses: mathieudutour/github-tag-action@v6.2
-      with:
-        github_token: ${{ secrets.git_token }}
-        custom_tag: ${{ steps.get_version.outputs.version }}
-    - name: Create a release
+    - name: Create tag and release
       uses: ncipollo/release-action@v1
       with:
-        tag: ${{ steps.get_version.outputs.version }}
+        tag: v${{ steps.get_version.outputs.version }}
         name: v${{ steps.get_version.outputs.version }}
         token: ${{ secrets.git_token }}
 
