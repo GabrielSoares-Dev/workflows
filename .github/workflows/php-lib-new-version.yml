@@ -35,6 +35,7 @@ jobs:
       with:
         tag: ${{ steps.get_version.outputs.version }}
         name: Release ${{ steps.get_version.outputs.version }}
+        token: ${{ secrets.git_token }}
 
     # - name: Update Package on Packagist
     #   run: |
