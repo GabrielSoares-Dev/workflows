@@ -21,8 +21,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.git_token }}
       run: |
-        VERSION=${{ steps.get_version.outputs.version }}
+        VERSION=v${{ steps.get_version.outputs.version }}
         git config --global user.name "github-actions"
         git config --global user.email "github-actions@github.com"
         git tag $VERSION
-        git push origin $VERSION
+        git push origin v$VERSION
