@@ -18,11 +18,7 @@ jobs:
         VERSION=$(jq -r '.version' composer.json)
         echo "::set-output name=version::$VERSION"
     - name: Create GitHub tag
-      env:
-        GITHUB_TOKEN: ${{ secrets.git_token }}
-      run: |
-        VERSION=${{ steps.get_version.outputs.version }}
-        git config --global user.name "github-actions"
-        git config --global user.email "github-actions@github.com"
-        git tag $VERSION
-        git push origin $VERSION
+      uses: laputansoft/github-tag-action@v4.6
+      with:
+        github_token: ${{  secrets.git_token }}
+        tag: ${{ steps.get_version.outputs.version }}
