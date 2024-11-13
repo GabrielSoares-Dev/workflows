@@ -1,6 +1,10 @@
 name: NEW - VERSION - PHP - LIB
 on:
     workflow_call:
+      secrets:
+       git_token:
+        description: 'token to use to create the tag'
+        required: true
 jobs:
   php_lib:
     runs-on: ubuntu-latest
@@ -13,5 +17,12 @@ jobs:
       run: |
         VERSION=$(jq -r '.version' composer.json)
         echo "::set-output name=version::$VERSION"
-    - name: Print version
-      run: echo "The version in composer.json is ${{ steps.get_version.outputs.version }}"
+    - name: Create GitHub tag
+      env:
+        GITHUB_TOKEN: ${{ secrets.git_token }}
+      run: |
+        VERSION=${{ steps.get_version.outputs.version }}
+        git config --global user.name "github-actions"
+        git config --global user.email "github-actions@github.com"
+        git tag $VERSION
+        git push origin $VERSION
