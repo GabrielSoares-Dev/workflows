@@ -25,14 +25,19 @@ jobs:
       run: |
         VERSION=$(jq -r '.version' composer.json)
         echo "::set-output name=version::$VERSION"
-    - name: Create GitHub tag
+    - name: Create tag
       uses: mathieudutour/github-tag-action@v6.2
       with:
         github_token: ${{ secrets.git_token }}
         custom_tag: ${{ steps.get_version.outputs.version }}
-    - name: Submit or Update Package on Packagist
-      run: |
-        REPO_URL="https://github.com/${{ github.repository }}"
-        curl -X POST https://packagist.org/api/create-package?username=${{inputs.packagist_username}}&apiToken=${{ secrets.packagist_token }} \
-        -H 'Content-Type: application/json' \
-        -d '{"repository":"https://github.com/${{github.repository}}"}'
+    - name: Create a release
+      uses: ncipollo/release-action@v1
+      with:
+        tag: ${{ steps.get_version.outputs.version }}
+        name: Release ${{ steps.get_version.outputs.version }}
+
+    # - name: Submit or Update Package on Packagist
+    #   run: |
+    #     curl -X POST https://packagist.org/api/update-package?username=${{inputs.packagist_username}}&apiToken=${{ secrets.packagist_token }} \
+    #     -H 'Content-Type: application/json' \
+    #     -d '{"repository":"https://github.com/${{github.repository}}"}'
