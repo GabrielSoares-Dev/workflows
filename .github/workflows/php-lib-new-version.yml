@@ -1,9 +1,17 @@
 name: NEW - VERSION - PHP - LIB
 on:
     workflow_call:
+      inputs:
+        packagist_username:
+          description: 'packagist user name'
+          required: true
+          type: string
       secrets:
        git_token:
         description: 'token to use to create the tag'
+        required: true
+       packagist_token:
+        description: 'token to use to interact with packagist api'
         required: true
 jobs:
   php_lib:
@@ -22,3 +30,8 @@ jobs:
       with:
         github_token: ${{ secrets.git_token }}
         custom_tag: ${{ steps.get_version.outputs.version }}
+    - name: Submit or Update Package on Packagist
+      run: |
+        curl -X POST https://packagist.org/api/create-package?username=${{inputs.packagist_username}}&apiToken=${{ secrets.packagist_token }} \
+        -H 'Content-Type: application/json' \
+        -d '{"repository": "https://github.com/${{ github.repository }}'
