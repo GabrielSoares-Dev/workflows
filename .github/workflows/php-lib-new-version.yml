@@ -1,11 +1,6 @@
 name: NEW - VERSION - PHP - LIB
 on:
     workflow_call:
-      inputs:
-        php_version:
-          description: 'php version'
-          required: true
-          type: string
 jobs:
   php_lib:
     runs-on: ubuntu-latest
