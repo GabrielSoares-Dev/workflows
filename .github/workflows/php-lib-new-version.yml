@@ -25,12 +25,12 @@ jobs:
       run: |
         VERSION=$(jq -r '.version' composer.json)
         echo "::set-output name=version::$VERSION"
-    # - name: Create tag and release
-    #   uses: ncipollo/release-action@v1
-    #   with:
-    #     tag: v${{ steps.get_version.outputs.version }}
-    #     name: v${{ steps.get_version.outputs.version }}
-    #     token: ${{ secrets.git_token }}
+    - name: Create tag and release
+      uses: ncipollo/release-action@v1
+      with:
+        tag: v${{ steps.get_version.outputs.version }}
+        name: v${{ steps.get_version.outputs.version }}
+        token: ${{ secrets.git_token }}
     - name: Update Package on Packagist
       run: |
         curl -X POST -H'Content-Type:application/json' 'https://packagist.org/api/update-package?username=${{inputs.packagist_username}}&apiToken=${{secrets.packagist_token}}' -d '{"repository":"https://github.com/${{github.repository}}"}'
