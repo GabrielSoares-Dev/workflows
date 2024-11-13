@@ -34,4 +34,4 @@ jobs:
       run: |
         curl -X POST https://packagist.org/api/create-package?username=${{inputs.packagist_username}}&apiToken=${{ secrets.packagist_token }} \
         -H 'Content-Type: application/json' \
-        -d '{"repository": "https://github.com/${{ github.repository }}'
+        -d '{"repository": "https://github.com/${{ github.repository }}" }'
