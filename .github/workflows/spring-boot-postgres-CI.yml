@@ -19,7 +19,7 @@ on:
         required: true
         type: string
 jobs:
-  spring-boot:
+  spring_boot:
     runs-on: ubuntu-latest
     services:
       postgres:
