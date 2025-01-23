@@ -1,23 +1,23 @@
 name: CI - SPRING - BOOT - POSTGRES
 on:
- workflow_call:
-      inputs:
-        node_version:
-          description: 'node version'
-          required: true
-          type: string
-        postgres_image:
-          description: 'postgres image'
-          required: true
-          type: string
-        java_version:
-          description: 'java version'
-          required: true
-          type: string
-        db_name:
-          description: 'postgres db name'
-          required: true
-          type: string
+  workflow_call:
+    inputs:
+      postgres_image:
+        description: 'postgres image'
+        required: true
+        type: string
+      node_version:
+        description: 'node version'
+        required: true
+        type: string
+      java_version:
+        description: 'java version'
+        required: true
+        type: string
+      db_name:
+        description: 'postgres db name'
+        required: true
+        type: string
 jobs:
   spring-boot:
     runs-on: ubuntu-latest
