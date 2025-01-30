@@ -22,7 +22,7 @@ on:
         description: 'Docker hub access token'
         required: true
 jobs:
-  docker_terraform:
+  build_image:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout do repositorio
