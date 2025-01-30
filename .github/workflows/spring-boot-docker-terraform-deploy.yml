@@ -14,6 +14,18 @@ on:
         description: 'docker image'
         required: true
         type: string
+      environment:
+        description: 'The environment to deploy to'
+        required: true
+        type: string
+      terraform_env_vars_path:
+        description: 'Path  terraform env vars'
+        required: true
+        type: string
+      terraform_work_dir:
+        description: Terraform work directory
+        required: true
+        type: string
     secrets:
       docker_hub_username:
         description: 'Docker hub username'
@@ -38,3 +50,40 @@ jobs:
           context: ${{inputs.dockerfile_dir}}
           file: ${{inputs.dockerfile_name}}
           tags: ${{inputs.image}}
+  terraform:
+    needs: build_image
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory:  ${{ inputs.terraform_work_dir }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.2.0"
+      - name: Init
+        run: terraform init
+      - name: Validate
+        run: terraform validate
+      - name: Select or Create Workspace
+        run: |
+          set -e
+
+          WORKSPACE_NAME="${{ inputs.environment }}"
+
+          WORKSPACES=$(terraform workspace list)
+
+          if echo "$WORKSPACES" | grep -q "\b${WORKSPACE_NAME}\b"; then
+            echo "Workspace ${WORKSPACE_NAME} exists. Selecting..."
+            terraform workspace select "${WORKSPACE_NAME}"
+          else
+            echo "Workspace ${WORKSPACE_NAME} does not exist. Creating..."
+            terraform workspace new "${WORKSPACE_NAME}"
+          fi
+      - name: Plan
+        run: terraform plan -out plan.out -var-file="${{ inputs.terraform_env_vars_path }}"
+      - name: Apply
+        run: terraform apply plan.out
