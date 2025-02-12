@@ -29,4 +29,4 @@ jobs:
       - name: Code style check
         run: npm run lint:test
       - name: Run tests and generate coverage report
-        run: npm run test:coverage
+        run: npm run test:pipeline
