@@ -1,0 +1,44 @@
+name: DEPLOY - SPRING - BOOT - SERVERLESS
+on:
+  workflow_call:
+    inputs:
+      node_version:
+        description: 'node version'
+        required: true
+        type: string
+      java_version:
+        description: 'java version'
+        required: true
+        type: string
+    secrets:
+      aws_access_key_id:
+        description: 'AWS Access Key ID'
+        required: true
+      aws_secret_access_key:
+        description: 'AWS Secret Access Key'
+        required: true
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.aws_access_key_id }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.aws_secret_access_key }}
+jobs:
+  spring_boot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ inputs.java_version }}
+      - name: Install Dependencies
+        run: npm run install:java:dependencies
+      - name: Build project
+        run: npm run build
+      - name: Install Node Dependencies
+        run: npm ci
+      - name: Deploy
+        run: npm run deploy
