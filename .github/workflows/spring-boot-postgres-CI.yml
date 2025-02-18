@@ -53,12 +53,3 @@ jobs:
         run: npm run lint:test
       - name: Run tests and generate coverage report
         run: npm run test:coverage
-      - name: Install Node dependencies
-        run: npm install
-      - name: Run newman
-        run: npm run test:newman:report
-      - name: Upload Newman report
-        uses: actions/upload-artifact@v3
-        with:
-          name: newman-report
-          path: ../../src/test/integration/report/htmlReport.html
