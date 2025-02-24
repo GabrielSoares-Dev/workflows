@@ -56,7 +56,7 @@ jobs:
           push: true
           context: ${{inputs.dockerfile_dir}}
           file: ${{inputs.dockerfile_name}}
-          tags: ${{ inputs.image }}:${{ github.env.DEPLOYMENT_ID }}
+          tags: ${{ inputs.image }}:${{ env.DEPLOYMENT_ID }}
           no-cache: true
   terraform:
     needs: build_image
