@@ -38,12 +38,12 @@ on:
       gcp_credentials_json:
         description: 'gcp credentials json'
         required: true
+env:
+  DEPLOYMENT_ID: ${{ github.sha }}
 jobs:
   build_image:
     runs-on: ubuntu-latest
     steps:
-      - name: Generate random UUID
-        run: echo "DEPLOYMENT_ID=$(uuidgen)" >> $GITHUB_ENV
       - name: Checkout do repositorio
         uses: actions/checkout@v4
       - name: Login to Docker Hub
