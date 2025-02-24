@@ -96,6 +96,6 @@ jobs:
             terraform workspace new "${WORKSPACE_NAME}"
           fi
       - name: Plan
-        run: terraform plan -out plan.out -var-file="${{ inputs.terraform_env_vars_path }}" -var="deployment_id=${{ github.env.DEPLOYMENT_ID }}"
+        run: terraform plan -out plan.out -var-file="${{ inputs.terraform_env_vars_path }}" -var="deployment_id=${{ env.DEPLOYMENT_ID }}"
       - name: Apply
         run: terraform apply plan.out
