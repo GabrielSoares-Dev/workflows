@@ -42,6 +42,8 @@ jobs:
   build_image:
     runs-on: ubuntu-latest
     steps:
+      - name: Generate random UUID
+        run: echo "DEPLOYMENT_ID=$(uuidgen)" >> $GITHUB_ENV
       - name: Checkout do repositorio
         uses: actions/checkout@v4
       - name: Login to Docker Hub
@@ -54,7 +56,7 @@ jobs:
           push: true
           context: ${{inputs.dockerfile_dir}}
           file: ${{inputs.dockerfile_name}}
-          tags: ${{inputs.image}}
+          tags: ${{inputs.image}}:${{ github.env.DEPLOYMENT_ID }}
           no-cache: true
   terraform:
     needs: build_image
@@ -94,6 +96,6 @@ jobs:
             terraform workspace new "${WORKSPACE_NAME}"
           fi
       - name: Plan
-        run: terraform plan -out plan.out -var-file="${{ inputs.terraform_env_vars_path }}"
+        run: terraform plan -out plan.out -var-file="${{ inputs.terraform_env_vars_path }}" -var="deployment_id=${{ github.env.DEPLOYMENT_ID }}"
       - name: Apply
         run: terraform apply plan.out
