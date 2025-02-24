@@ -55,6 +55,7 @@ jobs:
           context: ${{inputs.dockerfile_dir}}
           file: ${{inputs.dockerfile_name}}
           tags: ${{inputs.image}}
+          no-cache: true
   terraform:
     needs: build_image
     runs-on: ubuntu-latest
