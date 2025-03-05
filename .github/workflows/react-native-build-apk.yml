@@ -10,8 +10,8 @@ on:
           description: 'java version'
           required: true
           type: string
-        env_vars:
-          description: 'Environment variables as JSON'
+        env_content:
+          description: 'Environment file content'
           required: true
           type: string
 jobs:
@@ -31,9 +31,8 @@ jobs:
            node-version: ${{ inputs.node_version }}
        - name: Install dependencies
          run: npm i
-       - name: Generate .env file from inputs
-         run: |
-           echo "${{ inputs.env_vars }}" | jq -r 'to_entries | .[] | "\(.key)=\(.value)"' > .env
+       - name: Generate .env file
+         run: echo "${{ inputs.env_content }}" > .env
        - name: Grant execute permission to Gradlew
          run: chmod +x android/gradlew
        - name: Build Release APK
