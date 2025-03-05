@@ -10,6 +10,10 @@ on:
           description: 'java version'
           required: true
           type: string
+        env_vars:
+          description: 'Environment variables as JSON'
+          required: true
+          type: string
 jobs:
   react_native:
     runs-on: ubuntu-latest
@@ -27,13 +31,13 @@ jobs:
            node-version: ${{ inputs.node_version }}
        - name: Install dependencies
          run: npm i
-       - name: Generate .env file
+       - name: Generate .env file from inputs
          run: |
-           echo "API_URL=https://api.life-control.com.br" >> .env
+           echo "${{ inputs.env_vars }}" | jq -r 'to_entries | .[] | "\(.key)=\(.value)"' > .env
        - name: Grant execute permission to Gradlew
          run: chmod +x android/gradlew
        - name: Build Release APK
-         run: cd android && ./gradlew assembleRelease
+         run: cd android && ./gradlew app:assembleRelease
        - name: Upload APK
          uses: actions/upload-artifact@v4
          with:
