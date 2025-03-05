@@ -1,0 +1,38 @@
+name: BUILD - APK - REACT - NATIVE
+on:
+    workflow_call:
+      inputs:
+        node_version:
+          description: 'node version'
+          required: true
+          type: string
+        java_version:
+          description: 'java version'
+          required: true
+          type: string
+jobs:
+  react_native:
+    runs-on: ubuntu-latest
+    steps:
+       - name: Checkout do repositorio
+         uses: actions/checkout@v4
+       - name: Set up JDK
+         uses: actions/setup-java@v4
+         with:
+           distribution: 'temurin'
+           java-version: ${{ inputs.java_version }}
+       - name: Setup Node
+         uses: actions/setup-node@v4
+         with:
+           node-version: ${{ inputs.node_version }}
+       - name: Install dependencies
+         run: npm i
+    #    - name: Grant execute permission to Gradlew
+    #      run: chmod +x android/gradlew
+       - name: Build Release APK
+         run: cd android && ./gradlew assembleRelease
+       - name: Upload APK
+         uses: actions/upload-artifact@v4
+         with:
+           name: app-release-apk
+           path: android/app/build/outputs/apk/release/app-release.apk
