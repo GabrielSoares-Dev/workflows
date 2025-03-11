@@ -15,7 +15,7 @@ on:
         description: 'token to use to management expo'
         required: true
 jobs:
-  react_native:
+  react_native_expo:
     runs-on: ubuntu-latest
     steps:
        - name: Checkout do repositorio
