@@ -22,7 +22,7 @@ jobs:
   react_native_expo:
     runs-on: ubuntu-latest
     steps:
-       - name: Checkout do repositorio
+       - name: Checkout
          uses: actions/checkout@v4
        - name: Set up JDK
          uses: actions/setup-java@v4
@@ -33,6 +33,13 @@ jobs:
          uses: actions/setup-node@v4
          with:
            node-version: ${{ inputs.node_version }}
+       - name: Cache EAS Build
+         uses: actions/cache@v4
+         with:
+          path: ~/.eas/build-cache
+          key: ${{ runner.os }}-eas-build-cache
+          restore-keys: |
+             ${{ runner.os }}-eas-build-cache
        - name: Cache Node Modules
          uses: actions/cache@v4
          with:

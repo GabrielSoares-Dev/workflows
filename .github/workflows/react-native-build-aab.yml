@@ -18,7 +18,7 @@ jobs:
   react_native:
     runs-on: ubuntu-latest
     steps:
-       - name: Checkout do repositorio
+       - name: Checkout
          uses: actions/checkout@v4
        - name: Set up JDK
          uses: actions/setup-java@v4
