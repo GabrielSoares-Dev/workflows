@@ -43,7 +43,7 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
-       - name: 🏗 Setup EAS
+       - name: Setup EAS
          uses: expo/expo-github-action@v8
          with:
            eas-version: latest
@@ -52,4 +52,4 @@ jobs:
        - name: Install dependencies
          run: npm ci
        - name: Build Release APK
-         run: npm run build:apk
+         run: eas build -p android --profile build:apk --local
