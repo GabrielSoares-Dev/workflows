@@ -10,6 +10,10 @@ on:
           description: 'java version'
           required: true
           type: string
+        env_content:
+          description: 'Environment file content'
+          required: true
+          type: string
       secrets:
        expo_token:
         description: 'token to use to management expo'
@@ -51,10 +55,10 @@ jobs:
            token: ${{ secrets.expo_token }}
        - name: Install dependencies
          run: npm ci
+       - name: Generate .env file
+         run: echo "${{ inputs.env_content }}" > .env
        - name: Build Release APK
          run: npm run build:apk
-       - name: Move apk to root folder
-         run: mv ~/.expo/eas-build/builds/*/build/android/app/build/outputs/apk/release/app-release.apk ./app-release.apk
        - name: Upload APK
          uses: actions/upload-artifact@v4
          with:
