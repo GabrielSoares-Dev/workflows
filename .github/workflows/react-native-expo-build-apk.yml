@@ -10,10 +10,6 @@ on:
           description: 'java version'
           required: true
           type: string
-        env_content:
-          description: 'Environment file content'
-          required: true
-          type: string
       secrets:
        expo_token:
         description: 'token to use to management expo'
@@ -24,8 +20,6 @@ jobs:
     steps:
        - name: Checkout
          uses: actions/checkout@v4
-       - name: Generate .env file
-         run: echo "${{ inputs.env_content }}" > .env
        - name: Set up JDK
          uses: actions/setup-java@v4
          with:
