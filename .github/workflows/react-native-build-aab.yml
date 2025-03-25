@@ -14,6 +14,10 @@ on:
           description: 'Environment file content'
           required: true
           type: string
+      secrets:
+        release_key_base_64:
+          description: 'release key into base 64'
+          required: true
 jobs:
   react_native:
     runs-on: ubuntu-latest
@@ -47,6 +51,8 @@ jobs:
          run: npm ci
        - name: Generate .env file
          run: echo "${{ inputs.env_content }}" > .env
+       - name: Restore Keystore
+         run: echo "${{ secrets.release_key_base_64 }}" | base64 --decode > android/app/my-upload-key.keystore
        - name: Grant execute permission to Gradlew
          run: chmod +x android/gradlew
        - name: Build Release AAB
