@@ -1,0 +1,62 @@
+name: CI - PROJECT
+on:
+  workflow_call:
+    inputs:
+      gates:
+        description: 'Quality Gates to run, space separated, each one a `./project` command'
+        required: true
+        type: string
+      prod_target:
+        description: 'Dockerfile target built after the gates; empty skips the build'
+        required: false
+        type: string
+        default: 'prod'
+      backend_repository:
+        description: 'owner/repository whose openapi.json the frontend client is checked against; empty for backends'
+        required: false
+        type: string
+        default: ''
+    secrets:
+      backend_read_token:
+        description: 'Read-only token for a private backend repository'
+        required: false
+permissions:
+  contents: read
+  pull-requests: read
+jobs:
+  pr-rules:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pull request title follows Conventional Commits
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Branch name matches <type>/<ticket>-<description>
+        env:
+          BRANCH: ${{ github.head_ref }}
+        run: |
+          if ! printf '%s' "$BRANCH" | grep -Eq '^(feat|feature|fix|docs|style|refactor|perf|test|build|ci|chore|revert)/[0-9]+-[a-z0-9][a-z0-9-]*$'; then
+            echo "Branch '$BRANCH' does not match <type>/<ticket-number>-<description>"
+            exit 1
+          fi
+  gates:
+    runs-on: ubuntu-latest
+    env:
+      BACKEND_REPOSITORY: ${{ inputs.backend_repository }}
+      GITHUB_TOKEN: ${{ secrets.backend_read_token }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup
+        run: ./project setup
+      - name: Quality Gates
+        run: |
+          for gate in ${{ inputs.gates }}; do
+            echo "::group::project $gate"
+            ./project "$gate"
+            echo "::endgroup::"
+          done
+      - name: Build the production image
+        if: inputs.prod_target != ''
+        run: docker build --target "${{ inputs.prod_target }}" --tag ci-image .
