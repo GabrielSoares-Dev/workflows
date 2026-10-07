@@ -1,0 +1,114 @@
+name: DEPLOY - DOCKER - PORTAINER
+on:
+  workflow_call:
+    inputs:
+      image:
+        description: 'Docker Hub image without tag (user/name)'
+        required: true
+        type: string
+      dockerfile_dir:
+        description: 'Build context'
+        required: false
+        type: string
+        default: '.'
+      dockerfile_name:
+        description: 'Dockerfile name'
+        required: false
+        type: string
+        default: 'Dockerfile'
+      dockerfile_target:
+        description: 'Dockerfile target'
+        required: false
+        type: string
+        default: 'prod'
+      build_args:
+        description: 'Build arguments, one KEY=VALUE per line'
+        required: false
+        type: string
+        default: ''
+      rollback_tag:
+        description: 'Earlier tag to redeploy; empty builds the current commit'
+        required: false
+        type: string
+        default: ''
+      health_url:
+        description: 'URL polled until it answers 200; empty skips the check'
+        required: false
+        type: string
+        default: ''
+    secrets:
+      docker_hub_username:
+        required: true
+      docker_hub_access_token:
+        required: true
+      portainer_webhook_url:
+        required: true
+permissions:
+  contents: write
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.docker_hub_username }}
+          password: ${{ secrets.docker_hub_access_token }}
+      - name: Compute the release tag
+        id: tag
+        run: |
+          if [ -n "${{ inputs.rollback_tag }}" ]; then
+            echo "value=${{ inputs.rollback_tag }}" >> "$GITHUB_OUTPUT"
+          else
+            today=$(date -u +%Y-%m-%d)
+            count=$(git tag --list "deploy-${today}.*" | wc -l)
+            echo "value=deploy-${today}.$((count + 1))" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Set up Docker Buildx
+        if: inputs.rollback_tag == ''
+        uses: docker/setup-buildx-action@v3
+      - name: Build and push
+        if: inputs.rollback_tag == ''
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          context: ${{ inputs.dockerfile_dir }}
+          file: ${{ inputs.dockerfile_dir }}/${{ inputs.dockerfile_name }}
+          target: ${{ inputs.dockerfile_target }}
+          build-args: ${{ inputs.build_args }}
+          tags: |
+            ${{ inputs.image }}:${{ steps.tag.outputs.value }}
+            ${{ inputs.image }}:latest
+      - name: Roll back to an earlier image
+        if: inputs.rollback_tag != ''
+        run: |
+          docker buildx imagetools create \
+            --tag "${{ inputs.image }}:latest" \
+            "${{ inputs.image }}:${{ inputs.rollback_tag }}"
+      - name: Update the stack in Portainer
+        run: curl --fail --silent --show-error --max-time 60 -X POST "${{ secrets.portainer_webhook_url }}"
+      - name: Wait for the application
+        if: inputs.health_url != ''
+        run: |
+          for attempt in $(seq 1 30); do
+            status=$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 10 "${{ inputs.health_url }}" || true)
+            if [ "$status" = "200" ]; then
+              echo "healthy after attempt $attempt"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "no 200 from ${{ inputs.health_url }} after 5 minutes"
+          exit 1
+      - name: Tag the commit and publish the release
+        if: inputs.rollback_tag == ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git tag "${{ steps.tag.outputs.value }}"
+          git push origin "${{ steps.tag.outputs.value }}"
+          gh release create "${{ steps.tag.outputs.value }}" --generate-notes
