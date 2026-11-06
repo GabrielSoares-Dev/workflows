@@ -36,13 +36,30 @@ on:
         required: false
         type: string
         default: ''
+      portainer_stack:
+        description: 'Name of the Portainer stack to redeploy through the API; used when no webhook URL is given'
+        required: false
+        type: string
+        default: ''
+      portainer_insecure:
+        description: 'Accept a self-signed certificate on the Portainer URL'
+        required: false
+        type: boolean
+        default: false
     secrets:
       docker_hub_username:
         required: true
       docker_hub_access_token:
         required: true
       portainer_webhook_url:
-        required: true
+        description: 'Stack webhook (Portainer Business); empty uses the API'
+        required: false
+      portainer_url:
+        description: 'Portainer base URL, e.g. https://203.0.113.10:9443, for the API'
+        required: false
+      portainer_api_key:
+        description: 'Portainer access token (My account, Access tokens), for the API'
+        required: false
 permissions:
   contents: write
 jobs:
@@ -90,7 +107,40 @@ jobs:
             --tag "${{ inputs.image }}:latest" \
             "${{ inputs.image }}:${{ inputs.rollback_tag }}"
       - name: Update the stack in Portainer
-        run: curl --fail --silent --show-error --max-time 60 -X POST "${{ secrets.portainer_webhook_url }}"
+        env:
+          PORTAINER_WEBHOOK_URL: ${{ secrets.portainer_webhook_url }}
+          PORTAINER_URL: ${{ secrets.portainer_url }}
+          PORTAINER_API_KEY: ${{ secrets.portainer_api_key }}
+          PORTAINER_STACK: ${{ inputs.portainer_stack }}
+          PORTAINER_INSECURE: ${{ inputs.portainer_insecure && '1' || '' }}
+        run: |
+          set -euo pipefail
+          if [ -n "$PORTAINER_WEBHOOK_URL" ]; then
+            curl --fail --silent --show-error --max-time 60 -X POST "$PORTAINER_WEBHOOK_URL"
+            exit 0
+          fi
+          if [ -z "$PORTAINER_URL" ] || [ -z "$PORTAINER_API_KEY" ] || [ -z "$PORTAINER_STACK" ]; then
+            echo "set the portainer_webhook_url secret, or the portainer_url and portainer_api_key secrets with the portainer_stack input" >&2
+            exit 1
+          fi
+          api="${PORTAINER_URL%/}/api"
+          curl_api() {
+            curl --fail-with-body --silent --show-error --max-time 300 ${PORTAINER_INSECURE:+--insecure} \
+              -H "X-API-Key: ${PORTAINER_API_KEY}" "$@"
+          }
+          stacks=$(curl_api "$api/stacks")
+          stack=$(jq -c --arg name "$PORTAINER_STACK" '[.[] | select(.Name == $name)] | first // empty' <<<"$stacks")
+          if [ -z "$stack" ]; then
+            echo "no Portainer stack named $PORTAINER_STACK" >&2
+            exit 1
+          fi
+          id=$(jq -r '.Id' <<<"$stack")
+          endpoint=$(jq -r '.EndpointId' <<<"$stack")
+          file=$(curl_api "$api/stacks/$id/file" | jq -r '.StackFileContent')
+          jq -n --arg file "$file" --argjson env "$(jq -c '.Env // []' <<<"$stack")" \
+            '{stackFileContent: $file, env: $env, prune: false, pullImage: true}' \
+            | curl_api -X PUT "$api/stacks/$id?endpointId=$endpoint" -H 'Content-Type: application/json' --data-binary @- \
+            | jq -r '"stack \(.Name) (id \(.Id)) redeployed with the latest image"'
       - name: Wait for the application
         if: inputs.health_url != ''
         run: |
